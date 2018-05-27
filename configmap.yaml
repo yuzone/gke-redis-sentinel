@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  sentinel.sh: |
+    #!/bin/bash
+    if ping -c 1 redis-svc; then
+      echo "redis-svc alived!"
+      MASTER=$(redis-cli -h redis-svc -p 26379 SENTINEL get-master-addr-by-name master)
+      redis-cli -p 6379 slaveof $MASTER
+      redis-sentinel /dev/null --sentinel monitor master $MASTER $REDIS_QUORUM
+      echo 'Waiting for server'
+    else
+      echo "redis-svc NOT alived!"
+      redis-sentinel /dev/null --sentinel monitor master `hostname` 6379 $REDIS_QUORUM
+    fi
+
